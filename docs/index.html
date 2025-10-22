@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Data Anomaly Detection API | DataGems EOSC Project</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #24292e;
+            background-color: #f6f8fa;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            color: #0366d6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover {
+            color: #0256c7;
+            text-decoration: underline;
+        }
+
+        .section {
+            background: white;
+            margin: 2rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #0366d6;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e1e4e8;
+        }
+
+        .section h3 {
+            color: #24292e;
+            font-size: 1.3rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .param-card {
+            background: #f6f8fa;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border-left: 4px solid #0366d6;
+        }
+
+        .param-card h4 {
+            color: #0366d6;
+            margin-bottom: 0.5rem;
+        }
+
+        .param-card .type {
+            color: #6f42c1;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .param-card .desc {
+            color: #586069;
+            margin-top: 0.5rem;
+        }
+
+        .code-block {
+            background: #f6f8fa;
+            border: 1px solid #d1d5da;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .code-block pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #24292e;
+        }
+
+        .highlight {
+            background: #fffbdd;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .badge-primary {
+            background: #0366d6;
+            color: white;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .method-card {
+            background: linear-gradient(to right, #f6f8fa 0%, white 10%);
+            border-left: 4px solid #28a745;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 6px;
+        }
+
+        .example-section {
+            background: #f6f8fa;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .workflow-diagram {
+            background: white;
+            border: 2px dashed #d1d5da;
+            padding: 2rem;
+            border-radius: 6px;
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+
+        .workflow-step {
+            display: inline-block;
+            background: #0366d6;
+            color: white;
+            padding: 1rem 1.5rem;
+            margin: 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .workflow-arrow {
+            display: inline-block;
+            color: #0366d6;
+            font-size: 1.5rem;
+            margin: 0 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        table th {
+            background: #f6f8fa;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #d1d5da;
+        }
+
+        table td {
+            padding: 0.75rem;
+            border: 1px solid #d1d5da;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .info-box-icon {
+            color: #0c5460;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .footer {
+            background: #24292e;
+            color: #ffffff;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .param-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>🌐 Real-Time Data Anomaly Detection API</h1>
+            <p>Weather Time Series Anomaly Detection Service | DataGems EOSC Project</p>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#quickstart">Quick Start</a></li>
+            <li><a href="#api-methods">API Methods</a></li>
+            <li><a href="#input-output">Input/Output</a></li>
+            <li><a href="#workflow">Workflow</a></li>
+            <li><a href="#examples">Examples</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Overview -->
+        <section id="overview" class="section">
+            <h2>📋 Overview</h2>
+            
+            <div class="info-box">
+                <span class="info-box-icon">ℹ️</span>
+                <strong>Description:</strong> A real-time anomaly detection API service for weather station time series data using sliding window technique. Automatically detects anomalies in temperature, humidity, wind speed, barometric pressure, and rainfall.
+            </div>
+
+            <h3>Key Features</h3>
+            <div class="param-grid">
+                <div class="param-card">
+                    <h4>🕐 Sliding Window</h4>
+                    <p class="desc">Window Length: W time points<br>Stride: S time points</p>
+                </div>
+                <div class="param-card">
+                    <h4>📊 5 Core Variables</h4>
+                    <p class="desc">Temperature, Humidity, Wind Speed, Pressure, Rainfall</p>
+                </div>
+                <div class="param-card">
+                    <h4>⚡ Real-Time Processing</h4>
+                    <p class="desc">Supports streaming data input with automatic anomaly detection</p>
+                </div>
+                <div class="param-card">
+                    <h4>📍 Multi-Station Support</h4>
+                    <p class="desc">Simultaneous monitoring of multiple weather stations</p>
+                </div>
+            </div>
+
+            <h3>Technical Parameters</h3>
+            <table>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Symbol</th>
+                    <th>Default Value</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><span class="highlight">window_len</span></td>
+                    <td>W</td>
+                    <td>36</td>
+                    <td>Sliding window length (number of time points)</td>
+                </tr>
+                <tr>
+                    <td><span class="highlight">stride</span></td>
+                    <td>S</td>
+                    <td>18</td>
+                    <td>Sliding stride (number of time points)</td>
+                </tr>
+                <tr>
+                    <td><span class="highlight">time_interval</span></td>
+                    <td>Δt</td>
+                    <td>10 min</td>
+                    <td>Interval between consecutive time points</td>
+                </tr>
+                <tr>
+                    <td><span class="highlight">detection_frequency</span></td>
+                    <td>-</td>
+                    <td>S × Δt</td>
+                    <td>Detection frequency after each slide</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Quick Start -->
+        <section id="quickstart" class="section">
+            <h2>🚀 Quick Start</h2>
+            
+            <div class="example-section">
+                <h3>1. Installation</h3>
+                <div class="code-block">
+                    <pre>pip install simple-anomaly-detector</pre>
+                </div>
+            </div>
+
+            <div class="example-section">
+                <h3>2. Initialize Detector</h3>
+                <div class="code-block">
+                    <pre>from simple_anomaly_api import SlidingWindowAnomalyDetector
+
+detector = SlidingWindowAnomalyDetector(
+    window_len=W,  # W time points
+    stride=S       # S time points stride
+)</pre>
+                </div>
+            </div>
+
+            <div class="example-section">
+                <h3>3. Add Data and Detect</h3>
+                <div class="code-block">
+                    <pre># Add observation data
+detector.add_observation(
+    station_id="574",
+    timestamp=1761126600,
+    temp_out=15.2,
+    out_hum=80.0,
+    wind_speed=5.5,
+    bar=1013.2,
+    rain=0.0
+)
+
+# Detect anomalies
+anomalies = detector.detect()
+
+# View results
+print(f"Detected {len(anomalies)} anomalies")</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Methods -->
+        <section id="api-methods" class="section">
+            <h2>🔧 API Methods</h2>
+
+            <!-- Method 1: __init__ -->
+            <div class="method-card">
+                <h3><span class="badge badge-primary">Initialize</span> SlidingWindowAnomalyDetector()</h3>
+                <p><strong>Function:</strong> Create a new anomaly detector instance</p>
+                
+                <h4>Parameters:</h4>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Symbol</th>
+                        <th>Default</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">window_len</span></td>
+                        <td>int</td>
+                        <td>W</td>
+                        <td>36</td>
+                        <td>Sliding window length</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">stride</span></td>
+                        <td>int</td>
+                        <td>S</td>
+                        <td>18</td>
+                        <td>Sliding stride</td>
+                    </tr>
+                </table>
+
+                <h4>Example:</h4>
+                <div class="code-block">
+                    <pre>detector = SlidingWindowAnomalyDetector(window_len=W, stride=S)</pre>
+                </div>
+            </div>
+
+            <!-- Method 2: add_observation -->
+            <div class="method-card" style="border-left-color: #28a745;">
+                <h3><span class="badge badge-success">Add Data</span> add_observation()</h3>
+                <p><strong>Function:</strong> Add a single weather station observation</p>
+                
+                <h4>Parameters:</h4>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Unit</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">station_id</span></td>
+                        <td>str</td>
+                        <td>-</td>
+                        <td>Weather station ID (location identifier)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">timestamp</span></td>
+                        <td>int</td>
+                        <td>seconds</td>
+                        <td>Unix timestamp</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">temp_out</span></td>
+                        <td>float</td>
+                        <td>°C</td>
+                        <td>Outdoor temperature</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">out_hum</span></td>
+                        <td>float</td>
+                        <td>%</td>
+                        <td>Outdoor humidity</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">wind_speed</span></td>
+                        <td>float</td>
+                        <td>m/s</td>
+                        <td>Wind speed</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">bar</span></td>
+                        <td>float</td>
+                        <td>hPa</td>
+                        <td>Barometric pressure</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">rain</span></td>
+                        <td>float</td>
+                        <td>mm</td>
+                        <td>Rainfall</td>
+                    </tr>
+                </table>
+
+                <h4>Example:</h4>
+                <div class="code-block">
+                    <pre>detector.add_observation(
+    station_id="574",
+    timestamp=1761126600,
+    temp_out=15.2,
+    out_hum=80.0,
+    wind_speed=5.5,
+    bar=1013.2,
+    rain=0.0
+)</pre>
+                </div>
+            </div>
+
+            <!-- Method 3: add_batch_observations -->
+            <div class="method-card" style="border-left-color: #17a2b8;">
+                <h3><span class="badge badge-info">Batch Add</span> add_batch_observations()</h3>
+                <p><strong>Function:</strong> Add multiple observations at once</p>
+                
+                <h4>Parameters:</h4>
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">observations</span></td>
+                        <td>List[Dict]</td>
+                        <td>List of observation dictionaries containing all fields above</td>
+                    </tr>
+                </table>
+
+                <h4>Example:</h4>
+                <div class="code-block">
+                    <pre>observations = [
+    {
+        "station_id": "574",
+        "timestamp": 1761126600,
+        "temp_out": 15.2,
+        "out_hum": 80.0,
+        "wind_speed": 5.5,
+        "bar": 1013.2,
+        "rain": 0.0
+    },
+    {
+        "station_id": "575",
+        "timestamp": 1761126600,
+        "temp_out": 16.5,
+        "out_hum": 75.0,
+        "wind_speed": 4.2,
+        "bar": 1014.0,
+        "rain": 0.2
+    }
+]
+
+detector.add_batch_observations(observations)</pre>
+                </div>
+            </div>
+
+            <!-- Method 4: detect -->
+            <div class="method-card" style="border-left-color: #dc3545;">
+                <h3><span class="badge badge-warning">Detect</span> detect()</h3>
+                <p><strong>Function:</strong> Detect all anomalies in the current window</p>
+                
+                <h4>Returns:</h4>
+                <table>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">List[AnomalyResult]</span></td>
+                        <td>List of anomaly results, each element is an anomaly record</td>
+                    </tr>
+                </table>
+
+                <h4>Example:</h4>
+                <div class="code-block">
+                    <pre>anomalies = detector.detect()
+
+for anomaly in anomalies:
+    print(f"Station {anomaly.station_id}, {anomaly.variable} anomaly at {anomaly.anomaly_timestamp}")</pre>
+                </div>
+            </div>
+
+            <!-- Method 5: slide -->
+            <div class="method-card" style="border-left-color: #6f42c1;">
+                <h3><span class="badge badge-primary">Slide</span> slide()</h3>
+                <p><strong>Function:</strong> Slide the window forward, removing old data</p>
+                
+                <h4>Description:</h4>
+                <p>After calling this method, the oldest <span class="highlight">S</span> time points will be removed to make room for new data.</p>
+
+                <h4>Example:</h4>
+                <div class="code-block">
+                    <pre>detector.slide()  # Slide window, remove oldest S time points</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Input/Output -->
+        <section id="input-output" class="section">
+            <h2>📥📤 Input/Output Format</h2>
+
+            <h3>Input Format</h3>
+            <div class="example-section">
+                <h4>Single Observation:</h4>
+                <div class="code-block">
+                    <pre>{
+    "station_id": "574",        // Station ID
+    "timestamp": 1761126600,    // Unix timestamp
+    "temp_out": 15.2,           // Temperature (°C)
+    "out_hum": 80.0,            // Humidity (%)
+    "wind_speed": 5.5,          // Wind speed (m/s)
+    "bar": 1013.2,              // Pressure (hPa)
+    "rain": 0.0                 // Rainfall (mm)
+}</pre>
+                </div>
+            </div>
+
+            <h3>Output Format</h3>
+            <div class="example-section">
+                <h4>Anomaly Result (AnomalyResult):</h4>
+                <div class="code-block">
+                    <pre>{
+    "time_start": "2025-10-22 09:00:00",       // Window start time
+    "time_end": "2025-10-22 15:00:00",         // Window end time
+    "station_id": "574",                       // Station ID (location)
+    "variable": "temp_out",                    // Anomalous variable
+    "anomaly_timestamp": "2025-10-22 12:30:00", // Anomaly occurrence time
+    "anomaly_value": 25.5                      // Anomalous value
+}</pre>
+                </div>
+
+                <h4>Field Descriptions:</h4>
+                <table>
+                    <tr>
+                        <th>Field</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">time_start</span></td>
+                        <td>Detection window start time</td>
+                        <td>2025-10-22 09:00:00</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">time_end</span></td>
+                        <td>Detection window end time</td>
+                        <td>2025-10-22 15:00:00</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">station_id</span></td>
+                        <td>Location where anomaly occurred</td>
+                        <td>574</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">variable</span></td>
+                        <td>Which variable is anomalous</td>
+                        <td>temp_out, out_hum, wind_speed, bar, rain</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">anomaly_timestamp</span></td>
+                        <td>Exact time of anomaly occurrence</td>
+                        <td>2025-10-22 12:30:00</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">anomaly_value</span></td>
+                        <td>The anomalous value</td>
+                        <td>25.5</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>Complete Output Example</h3>
+            <div class="code-block">
+                <pre>{
+    "detection_time": "2025-10-22 16:30:00",
+    "total_anomalies": 3,
+    "anomalies": [
+        {
+            "time_start": "2025-10-22 09:00:00",
+            "time_end": "2025-10-22 15:00:00",
+            "station_id": "574",
+            "variable": "temp_out",
+            "anomaly_timestamp": "2025-10-22 12:30:00",
+            "anomaly_value": 25.5
+        },
+        {
+            "time_start": "2025-10-22 09:00:00",
+            "time_end": "2025-10-22 15:00:00",
+            "station_id": "575",
+            "variable": "wind_speed",
+            "anomaly_timestamp": "2025-10-22 13:00:00",
+            "anomaly_value": 35.2
+        },
+        {
+            "time_start": "2025-10-22 09:00:00",
+            "time_end": "2025-10-22 15:00:00",
+            "station_id": "576",
+            "variable": "bar",
+            "anomaly_timestamp": "2025-10-22 14:20:00",
+            "anomaly_value": 995.5
+        }
+    ]
+}</pre>
+            </div>
+        </section>
+
+        <!-- Workflow -->
+        <section id="workflow" class="section">
+            <h2>🔄 Real-Time Workflow</h2>
+
+            <div class="workflow-diagram">
+                <div class="workflow-step">1. Initialize</div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">2. Load W points</div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">3. Detect</div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">4. Export</div>
+                <br><br>
+                <div class="workflow-arrow" style="transform: rotate(180deg);">→</div>
+                <br><br>
+                <div class="workflow-step">7. Add S points</div>
+                <div class="workflow-arrow" style="transform: rotate(180deg);">→</div>
+                <div class="workflow-step">6. Slide</div>
+                <div class="workflow-arrow" style="transform: rotate(180deg);">→</div>
+                <div class="workflow-step">5. Wait S×Δt</div>
+            </div>
+
+            <h3>Detailed Steps</h3>
+            
+            <div class="param-grid">
+                <div class="param-card">
+                    <h4>Step 1: Initialize Detector</h4>
+                    <p class="desc">Create detector instance with window parameters</p>
+                    <div class="code-block">
+                        <pre>detector = SlidingWindowAnomalyDetector(
+    window_len=W, 
+    stride=S
+)</pre>
+                    </div>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 2: Load Initial Data</h4>
+                    <p class="desc">Load W time points of historical data to fill the first window</p>
+                    <div class="code-block">
+                        <pre>for i in range(W):
+    detector.add_observation(...)</pre>
+                    </div>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 3: Detect Anomalies</h4>
+                    <p class="desc">Perform anomaly detection on current window data</p>
+                    <div class="code-block">
+                        <pre>anomalies = detector.detect()</pre>
+                    </div>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 4: Export Results</h4>
+                    <p class="desc">Export detected anomalies to JSON file</p>
+                    <div class="code-block">
+                        <pre>export_results(
+    anomalies, 
+    "results.json"
+)</pre>
+                    </div>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 5: Wait for New Data</h4>
+                    <p class="desc">Wait for S×Δt time (S new time points) to arrive</p>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 6: Slide Window</h4>
+                    <p class="desc">Remove oldest S time points to make room for new data</p>
+                    <div class="code-block">
+                        <pre>detector.slide()</pre>
+                    </div>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 7: Add New Data</h4>
+                    <p class="desc">Add newly arrived S time points</p>
+                    <div class="code-block">
+                        <pre>for i in range(S):
+    detector.add_observation(...)</pre>
+                    </div>
+                </div>
+
+                <div class="param-card">
+                    <h4>Step 8: Loop</h4>
+                    <p class="desc">Return to Step 3 for continuous monitoring</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Examples -->
+        <section id="examples" class="section">
+            <h2>💻 Complete Examples</h2>
+
+            <h3>Basic Example</h3>
+            <div class="code-block">
+                <pre>from simple_anomaly_api import SlidingWindowAnomalyDetector, export_results
+
+# 1. Initialize detector (W=36, S=18)
+detector = SlidingWindowAnomalyDetector(window_len=36, stride=18)
+
+# 2. Load initial data (W time points)
+for i in range(36):
+    timestamp = 1761100000 + i * 600  # Every 10 minutes
+    detector.add_observation(
+        station_id="574",
+        timestamp=timestamp,
+        temp_out=15.0 + i * 0.1,
+        out_hum=80.0,
+        wind_speed=5.0,
+        bar=1013.0,
+        rain=0.0
+    )
+
+# 3. Detect anomalies
+anomalies = detector.detect()
+print(f"Detected {len(anomalies)} anomalies")
+
+# 4. Export results
+export_results(anomalies, "anomaly_results.json")
+
+# 5. View anomaly details
+for anomaly in anomalies:
+    print(f"Anomaly: Station {anomaly.station_id}, {anomaly.variable}")
+    print(f"  Time: {anomaly.anomaly_timestamp}")
+    print(f"  Value: {anomaly.anomaly_value}")
+    print()</pre>
+            </div>
+
+            <h3>Real-Time Monitoring Example</h3>
+            <div class="code-block">
+                <pre>import time
+from simple_anomaly_api import SlidingWindowAnomalyDetector, export_results
+
+detector = SlidingWindowAnomalyDetector(window_len=36, stride=18)
+
+# Load initial data
+load_initial_data(detector, window_len=36)
+
+# Real-time monitoring loop
+while True:
+    # 1. Detect in current window
+    anomalies = detector.detect()
+    
+    # 2. Process anomalies
+    if anomalies:
+        print(f"⚠️  Detected {len(anomalies)} anomalies!")
+        export_results(anomalies, f"anomalies_{int(time.time())}.json")
+        
+        # Send alerts
+        send_alert(anomalies)
+    else:
+        print("✓ No anomalies")
+    
+    # 3. Slide window
+    detector.slide()
+    
+    # 4. Wait and add new data (S × Δt = 18 × 10min = 3 hours)
+    time.sleep(3 * 3600)  # Wait 3 hours
+    
+    # 5. Fetch and add new S time points
+    new_data = fetch_new_data(count=18)
+    for obs in new_data:
+        detector.add_observation(**obs)
+    
+    print("Window updated, ready for next detection\n")</pre>
+            </div>
+
+            <h3>Batch Processing Example</h3>
+            <div class="code-block">
+                <pre>from simple_anomaly_api import SlidingWindowAnomalyDetector, export_results
+
+detector = SlidingWindowAnomalyDetector(window_len=36, stride=18)
+
+# Batch add data for multiple stations
+observations = []
+for station_id in ["574", "575", "576"]:
+    for i in range(36):
+        observations.append({
+            "station_id": station_id,
+            "timestamp": 1761100000 + i * 600,
+            "temp_out": 15.0 + i * 0.1,
+            "out_hum": 80.0,
+            "wind_speed": 5.0,
+            "bar": 1013.0,
+            "rain": 0.0
+        })
+
+# Add all data at once
+detector.add_batch_observations(observations)
+
+# Detect
+anomalies = detector.detect()
+print(f"Detected {len(anomalies)} anomalies in {len(set(o['station_id'] for o in observations))} stations")</pre>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="section">
+            <h2>❓ Frequently Asked Questions</h2>
+
+            <h3>1. Recommended Window Length Configuration</h3>
+            <p>For default configuration, W = 36 time points with Δt = 10 minutes results in a 6-hour window (W × Δt = 6 hours). This window length is sufficient to capture short-term variation patterns in meteorological data while avoiding excessive detection delays.</p>
+
+            <h3>2. Recommended Stride Configuration</h3>
+            <p>For default configuration, S = 18 time points corresponds to a 3-hour interval (S × Δt = 3 hours), meaning detection is performed every 3 hours. This ensures 50% overlap between consecutive windows (S/W = 0.5), improving the continuity of anomaly detection.</p>
+
+            <h3>3. How is a value determined to be anomalous?</h3>
+            <p>The system uses statistical methods (Z-score) for determination. If a value deviates from the time series mean by more than 2.5 standard deviations (|Z| > 2.5), it will be flagged as anomalous.</p>
+
+            <h3>4. What variables are supported?</h3>
+            <p>The system currently supports 5 core meteorological variables:</p>
+            <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                <li><strong>temp_out</strong>: Outdoor temperature (°C)</li>
+                <li><strong>out_hum</strong>: Outdoor humidity (%)</li>
+                <li><strong>wind_speed</strong>: Wind speed (m/s)</li>
+                <li><strong>bar</strong>: Barometric pressure (hPa)</li>
+                <li><strong>rain</strong>: Rainfall (mm)</li>
+            </ul>
+
+            <h3>5. How does the system handle missing data?</h3>
+            <p>The system automatically skips missing or invalid data points. However, it is recommended to ensure data completeness as much as possible to achieve more accurate detection results.</p>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <p><strong>Real-Time Data Anomaly Detection API v1.0</strong></p>
+        <p>DataGems EOSC Project | Weather Anomaly Detection System</p>
+        <p style="margin-top: 1rem; opacity: 0.8;">© 2025 | Documentation Generated: 2025-10-22</p>
+    </footer>
+</body>
+</html>
