@@ -1,0 +1,40 @@
+# DataGems EOSC - Weather Anomaly Detection
+# Requirements file for conda/pip installation
+# Python >= 3.10
+
+# Core scientific computing
+numpy>=2.0.0
+scipy>=1.10.0
+
+# Data manipulation
+pandas>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# Web API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python>=3.10.14
+
+# Optional dependencies for extended functionality
+# Uncomment as needed:
+
+# Machine Learning (future enhancements)
+# scikit-learn>=1.3.0
+
+# Deep Learning (planned)
+# torch>=2.0.0
+# tensorflow>=2.13.0
+
+# Workflow integration
+# apache-airflow>=2.7.0
+
+# Development dependencies
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.5.0
+
