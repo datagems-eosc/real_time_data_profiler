@@ -298,8 +298,30 @@
             
             <div class="info-box">
                 <span class="info-box-icon">ℹ️</span>
-                <strong>Description:</strong> A real-time anomaly detection API service for weather station time series data using sliding window technique. Automatically detects anomalies in temperature, humidity, wind speed, barometric pressure, and rainfall.
+                <strong>Description:</strong> A real-time anomaly detection API service for weather station time series data using sliding window technique. The system connects to a complete historical database (Full Data), uses a pointer to locate user-specified starting timestamp, extracts a Data Stream from that point to current time, and applies sliding windows for anomaly detection.
             </div>
+            
+            <h3>System Architecture</h3>
+            <div class="workflow-diagram">
+                <div class="workflow-step">Full Data<br><small>[0 → current]</small></div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">Pointer<br><small>[user: 47]</small></div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">Data Stream<br><small>[47 → current]</small></div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">Sliding Windows<br><small>[W, S]</small></div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">Detect<br><small>[Z-score]</small></div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">Results</div>
+            </div>
+            <p style="text-align: center; color: #586069; margin-top: 1rem;">
+                <strong>Full Data:</strong> Complete historical database (e.g., timestamps 0 → 10000)<br>
+                <strong>Pointer:</strong> User inputs starting timestamp (e.g., 47) → Locates position in Full Data<br>
+                <strong>Data Stream:</strong> Extracted subset from pointer to current (e.g., 47 → 10000)<br>
+                <strong>Sliding Windows:</strong> Split Data Stream into overlapping windows for analysis<br>
+                <strong>Output:</strong> Anomaly list for each window
+            </p>
 
             <h3>Key Features</h3>
             <div class="param-grid">
@@ -332,7 +354,7 @@
                 <tr>
                     <td><span class="highlight">window_len</span></td>
                     <td>W</td>
-                    <td>36</td>
+                    <td>60</td>
                     <td>Sliding window length (number of time points)</td>
                 </tr>
                 <tr>
@@ -353,7 +375,55 @@
                     <td>S × Δt</td>
                     <td>Detection frequency after each slide</td>
                 </tr>
+                <tr>
+                    <td><span class="highlight">algorithm</span></td>
+                    <td>-</td>
+                    <td>zscore</td>
+                    <td>Anomaly detection algorithm</td>
+                </tr>
+                <tr>
+                    <td><span class="highlight">threshold</span></td>
+                    <td>σ/k</td>
+                    <td>2.5</td>
+                    <td>Algorithm-specific threshold</td>
+                </tr>
             </table>
+
+            <h3>Supported Algorithms</h3>
+            <div class="param-grid">
+                <div class="param-card">
+                    <h4>📊 Z-Score (Default)</h4>
+                    <p class="type">algorithm: "zscore"</p>
+                    <p class="desc"><strong>Formula:</strong> Z = (X - μ) / σ</p>
+                    <p class="desc"><strong>Threshold:</strong> 2.5 - 3.0</p>
+                    <p class="desc"><strong>Best for:</strong> Normally distributed data</p>
+                    <p class="desc">✅ Fast, interpretable<br>❌ Sensitive to outliers</p>
+                </div>
+                <div class="param-card">
+                    <h4>📦 IQR (Interquartile Range)</h4>
+                    <p class="type">algorithm: "iqr"</p>
+                    <p class="desc"><strong>Formula:</strong> IQR = Q3 - Q1</p>
+                    <p class="desc"><strong>Threshold:</strong> 1.5 - 3.0</p>
+                    <p class="desc"><strong>Best for:</strong> Skewed distributions</p>
+                    <p class="desc">✅ Robust to outliers<br>❌ Less sensitive</p>
+                </div>
+                <div class="param-card">
+                    <h4>🎯 MAD (Median Absolute Deviation)</h4>
+                    <p class="type">algorithm: "mad"</p>
+                    <p class="desc"><strong>Formula:</strong> MAD = median(|X - median(X)|)</p>
+                    <p class="desc"><strong>Threshold:</strong> 3.0 - 4.0</p>
+                    <p class="desc"><strong>Best for:</strong> Noisy data</p>
+                    <p class="desc">✅ Very robust<br>❌ Slower computation</p>
+                </div>
+                <div class="param-card">
+                    <h4>🌲 Isolation Forest</h4>
+                    <p class="type">algorithm: "isolation_forest"</p>
+                    <p class="desc"><strong>Type:</strong> Machine Learning</p>
+                    <p class="desc"><strong>Threshold:</strong> 5 - 20 (contamination rate)</p>
+                    <p class="desc"><strong>Best for:</strong> Complex patterns</p>
+                    <p class="desc">✅ High-dimensional data<br>❌ Black box model</p>
+                </div>
+            </div>
         </section>
 
         <!-- Quick Start -->
@@ -361,57 +431,58 @@
             <h2>🚀 Quick Start</h2>
             
             <div class="example-section">
-                <h3>1. Installation</h3>
+                <h3>1. Prepare Your Request</h3>
+                <p>You only need to specify a <strong>starting timestamp</strong> and optional parameters. The system will automatically connect to the full data source and stream data forward.</p>
+            </div>
+
+            <div class="example-section">
+                <h3>2. Send API Request</h3>
                 <div class="code-block">
-                    <pre>pip install simple-anomaly-detector</pre>
+                    <pre>import requests
+
+url = "https://real-time-data-profiler.onrender.com/detect"
+
+# User inputs starting timestamp
+data = {
+    "start_timestamp": 1729584600,  # Pointer to data stream
+    "window_len": 60,                # W = 60 time points (10 hours)
+    "stride": 18,                    # S = 18 time points (3 hours)
+    "threshold": 2.5,                # Threshold for anomaly detection
+    "algorithm": "zscore"            # Detection algorithm
+}
+
+response = requests.post(url, json=data)
+result = response.json()</pre>
                 </div>
             </div>
 
             <div class="example-section">
-                <h3>2. Initialize Detector</h3>
+                <h3>3. View Results</h3>
                 <div class="code-block">
-                    <pre>from simple_anomaly_api import SlidingWindowAnomalyDetector
-
-detector = SlidingWindowAnomalyDetector(
-    window_len=W,  # W time points
-    stride=S       # S time points stride
-)</pre>
-                </div>
-            </div>
-
-            <div class="example-section">
-                <h3>3. Add Data and Detect</h3>
-                <div class="code-block">
-                    <pre># Add observation data
-detector.add_observation(
-    station_id="574",
-    timestamp=1761126600,
-    temp_out=15.2,
-    out_hum=80.0,
-    wind_speed=5.5,
-    bar=1013.2,
-    rain=0.0
-)
-
-# Detect anomalies
-anomalies = detector.detect()
-
-# View results
-print(f"Detected {len(anomalies)} anomalies")</pre>
+                    <pre># Check detection results
+if result["status"] == "anomalies_found":
+    print(f"Found {result['total_anomalies']} anomalies in {result['total_windows']} windows")
+    
+    for window in result["windows"]:
+        print(f"\nWindow [{window['window_start']} → {window['window_end']}]:")
+        for anomaly in window["anomalies"]:
+            print(f"  Station {anomaly['station_id']}: {anomaly['variable']} = {anomaly['anomaly_value']}")
+else:
+    print("No anomalies detected")</pre>
                 </div>
             </div>
         </section>
 
         <!-- API Methods -->
         <section id="api-methods" class="section">
-            <h2>🔧 API Methods</h2>
+            <h2>🔧 API Endpoint</h2>
 
-            <!-- Method 1: __init__ -->
+            <!-- POST /detect -->
             <div class="method-card">
-                <h3><span class="badge badge-primary">Initialize</span> SlidingWindowAnomalyDetector()</h3>
-                <p><strong>Function:</strong> Create a new anomaly detector instance</p>
+                <h3><span class="badge badge-primary">POST</span> /detect</h3>
+                <p><strong>Function:</strong> Detect anomalies in weather data stream starting from a specified timestamp</p>
                 
-                <h4>Parameters:</h4>
+                <h4>Request Parameters:</h4>
                 <table>
                     <tr>
                         <th>Parameter</th>
@@ -421,182 +492,141 @@ print(f"Detected {len(anomalies)} anomalies")</pre>
                         <th>Description</th>
                     </tr>
                     <tr>
+                        <td><span class="highlight">start_timestamp</span></td>
+                        <td>int</td>
+                        <td>t₀</td>
+                        <td><strong>Required</strong></td>
+                        <td>Starting timestamp (Unix format) - Pointer to data stream</td>
+                    </tr>
+                    <tr>
                         <td><span class="highlight">window_len</span></td>
                         <td>int</td>
                         <td>W</td>
-                        <td>36</td>
-                        <td>Sliding window length</td>
+                        <td>60</td>
+                        <td>Sliding window length (number of time points)</td>
                     </tr>
                     <tr>
                         <td><span class="highlight">stride</span></td>
                         <td>int</td>
                         <td>S</td>
                         <td>18</td>
-                        <td>Sliding stride</td>
+                        <td>Sliding stride (number of time points)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">threshold</span></td>
+                        <td>float</td>
+                        <td>σ/k</td>
+                        <td>2.5</td>
+                        <td>Threshold for anomaly detection (interpretation depends on algorithm)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">algorithm</span></td>
+                        <td>string</td>
+                        <td>-</td>
+                        <td>"zscore"</td>
+                        <td>Detection algorithm: <code>zscore</code>, <code>iqr</code>, <code>mad</code>, <code>isolation_forest</code></td>
                     </tr>
                 </table>
 
-                <h4>Example:</h4>
+                <h4>Request Example:</h4>
                 <div class="code-block">
-                    <pre>detector = SlidingWindowAnomalyDetector(window_len=W, stride=S)</pre>
-                </div>
-            </div>
+                    <pre>POST https://real-time-data-profiler.onrender.com/detect
 
-            <!-- Method 2: add_observation -->
-            <div class="method-card" style="border-left-color: #28a745;">
-                <h3><span class="badge badge-success">Add Data</span> add_observation()</h3>
-                <p><strong>Function:</strong> Add a single weather station observation</p>
-                
-                <h4>Parameters:</h4>
+{
+  "start_timestamp": 1729584600,
+  "window_len": 60,
+  "stride": 18,
+  "threshold": 2.5,
+  "algorithm": "zscore"
+}</pre>
+                </div>
+
+                <h4>Response Structure:</h4>
                 <table>
                     <tr>
-                        <th>Parameter</th>
+                        <th>Field</th>
                         <th>Type</th>
-                        <th>Unit</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">status</span></td>
+                        <td>string</td>
+                        <td>"anomalies_found" or "no_anomalies"</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">total_windows</span></td>
+                        <td>int</td>
+                        <td>Number of sliding windows analyzed</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">total_anomalies</span></td>
+                        <td>int</td>
+                        <td>Total number of anomalies detected</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">windows</span></td>
+                        <td>List[Window]</td>
+                        <td>List of windows with anomalies</td>
+                    </tr>
+                </table>
+
+                <h4>Window Object Structure:</h4>
+                <table>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">window_id</span></td>
+                        <td>int</td>
+                        <td>Sequential window identifier</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">window_start</span></td>
+                        <td>string</td>
+                        <td>Window start time (YYYY-MM-DD HH:MM:SS)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">window_end</span></td>
+                        <td>string</td>
+                        <td>Window end time (YYYY-MM-DD HH:MM:SS)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">anomalies</span></td>
+                        <td>List[Anomaly]</td>
+                        <td>List of anomalies in this window</td>
+                    </tr>
+                </table>
+
+                <h4>Anomaly Object Structure:</h4>
+                <table>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
                         <th>Description</th>
                     </tr>
                     <tr>
                         <td><span class="highlight">station_id</span></td>
-                        <td>str</td>
-                        <td>-</td>
-                        <td>Weather station ID (location identifier)</td>
+                        <td>string</td>
+                        <td>Weather station ID (location)</td>
                     </tr>
                     <tr>
-                        <td><span class="highlight">timestamp</span></td>
-                        <td>int</td>
-                        <td>seconds</td>
-                        <td>Unix timestamp</td>
+                        <td><span class="highlight">variable</span></td>
+                        <td>string</td>
+                        <td>Anomalous variable (temp_out, out_hum, wind_speed, bar, rain)</td>
                     </tr>
                     <tr>
-                        <td><span class="highlight">temp_out</span></td>
+                        <td><span class="highlight">anomaly_value</span></td>
                         <td>float</td>
-                        <td>°C</td>
-                        <td>Outdoor temperature</td>
+                        <td>The anomalous value</td>
                     </tr>
                     <tr>
-                        <td><span class="highlight">out_hum</span></td>
-                        <td>float</td>
-                        <td>%</td>
-                        <td>Outdoor humidity</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">wind_speed</span></td>
-                        <td>float</td>
-                        <td>m/s</td>
-                        <td>Wind speed</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">bar</span></td>
-                        <td>float</td>
-                        <td>hPa</td>
-                        <td>Barometric pressure</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">rain</span></td>
-                        <td>float</td>
-                        <td>mm</td>
-                        <td>Rainfall</td>
+                        <td><span class="highlight">anomaly_timestamp</span></td>
+                        <td>string</td>
+                        <td>Exact time of anomaly occurrence</td>
                     </tr>
                 </table>
-
-                <h4>Example:</h4>
-                <div class="code-block">
-                    <pre>detector.add_observation(
-    station_id="574",
-    timestamp=1761126600,
-    temp_out=15.2,
-    out_hum=80.0,
-    wind_speed=5.5,
-    bar=1013.2,
-    rain=0.0
-)</pre>
-                </div>
-            </div>
-
-            <!-- Method 3: add_batch_observations -->
-            <div class="method-card" style="border-left-color: #17a2b8;">
-                <h3><span class="badge badge-info">Batch Add</span> add_batch_observations()</h3>
-                <p><strong>Function:</strong> Add multiple observations at once</p>
-                
-                <h4>Parameters:</h4>
-                <table>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">observations</span></td>
-                        <td>List[Dict]</td>
-                        <td>List of observation dictionaries containing all fields above</td>
-                    </tr>
-                </table>
-
-                <h4>Example:</h4>
-                <div class="code-block">
-                    <pre>observations = [
-    {
-        "station_id": "574",
-        "timestamp": 1761126600,
-        "temp_out": 15.2,
-        "out_hum": 80.0,
-        "wind_speed": 5.5,
-        "bar": 1013.2,
-        "rain": 0.0
-    },
-    {
-        "station_id": "575",
-        "timestamp": 1761126600,
-        "temp_out": 16.5,
-        "out_hum": 75.0,
-        "wind_speed": 4.2,
-        "bar": 1014.0,
-        "rain": 0.2
-    }
-]
-
-detector.add_batch_observations(observations)</pre>
-                </div>
-            </div>
-
-            <!-- Method 4: detect -->
-            <div class="method-card" style="border-left-color: #dc3545;">
-                <h3><span class="badge badge-warning">Detect</span> detect()</h3>
-                <p><strong>Function:</strong> Detect all anomalies in the current window</p>
-                
-                <h4>Returns:</h4>
-                <table>
-                    <tr>
-                        <th>Type</th>
-                        <th>Description</th>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">List[AnomalyResult]</span></td>
-                        <td>List of anomaly results, each element is an anomaly record</td>
-                    </tr>
-                </table>
-
-                <h4>Example:</h4>
-                <div class="code-block">
-                    <pre>anomalies = detector.detect()
-
-for anomaly in anomalies:
-    print(f"Station {anomaly.station_id}, {anomaly.variable} anomaly at {anomaly.anomaly_timestamp}")</pre>
-                </div>
-            </div>
-
-            <!-- Method 5: slide -->
-            <div class="method-card" style="border-left-color: #6f42c1;">
-                <h3><span class="badge badge-primary">Slide</span> slide()</h3>
-                <p><strong>Function:</strong> Slide the window forward, removing old data</p>
-                
-                <h4>Description:</h4>
-                <p>After calling this method, the oldest <span class="highlight">S</span> time points will be removed to make room for new data.</p>
-
-                <h4>Example:</h4>
-                <div class="code-block">
-                    <pre>detector.slide()  # Slide window, remove oldest S time points</pre>
-                </div>
             </div>
         </section>
 
@@ -606,199 +636,218 @@ for anomaly in anomalies:
 
             <h3>Input Format</h3>
             <div class="example-section">
-                <h4>Single Observation:</h4>
+                <h4>Request Body:</h4>
                 <div class="code-block">
                     <pre>{
-    "station_id": "574",        // Station ID
-    "timestamp": 1761126600,    // Unix timestamp
-    "temp_out": 15.2,           // Temperature (°C)
-    "out_hum": 80.0,            // Humidity (%)
-    "wind_speed": 5.5,          // Wind speed (m/s)
-    "bar": 1013.2,              // Pressure (hPa)
-    "rain": 0.0                 // Rainfall (mm)
+    "start_timestamp": 1729584600,  // Starting point in data stream (Unix timestamp)
+    "window_len": 60,               // W = Window length in time points
+    "stride": 18,                   // S = Sliding stride in time points
+    "threshold": 2.5,               // Threshold for anomaly detection
+    "algorithm": "zscore"           // Detection algorithm (zscore, iqr, mad, isolation_forest)
 }</pre>
                 </div>
+                <p><strong>Note:</strong> You only need to provide the starting timestamp. The system will:</p>
+                <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                    <li>Connect to <strong>Full Data</strong> (complete historical database, e.g., 0 → 10000)</li>
+                    <li>Use <strong>Pointer</strong> to locate your timestamp (e.g., 47)</li>
+                    <li>Extract <strong>Data Stream</strong> from pointer to current time (e.g., 47 → 10000)</li>
+                    <li>Apply <strong>Sliding Windows</strong> to Data Stream for all stations and all 5 variables</li>
+                </ul>
             </div>
 
             <h3>Output Format</h3>
             <div class="example-section">
-                <h4>Anomaly Result (AnomalyResult):</h4>
+                <h4>Response Structure:</h4>
                 <div class="code-block">
                     <pre>{
-    "time_start": "2025-10-22 09:00:00",       // Window start time
-    "time_end": "2025-10-22 15:00:00",         // Window end time
-    "station_id": "574",                       // Station ID (location)
-    "variable": "temp_out",                    // Anomalous variable
-    "anomaly_timestamp": "2025-10-22 12:30:00", // Anomaly occurrence time
-    "anomaly_value": 25.5                      // Anomalous value
+    "status": "anomalies_found",
+    "message": "Detected 3 anomaly(ies) across 2 window(s)",
+    "total_windows": 2,
+    "total_anomalies": 3,
+    "windows": [
+        {
+            "window_id": 1,
+            "window_start": "2024-10-22 08:00:00",
+            "window_end": "2024-10-22 18:00:00",
+            "anomalies": [
+                {
+                    "station_id": "574",
+                    "variable": "temp_out",
+                    "anomaly_value": 35.5,
+                    "anomaly_timestamp": "2024-10-22 12:30:00"
+                },
+                {
+                    "station_id": "575",
+                    "variable": "wind_speed",
+                    "anomaly_value": 42.3,
+                    "anomaly_timestamp": "2024-10-22 14:20:00"
+                }
+            ]
+        },
+        {
+            "window_id": 2,
+            "window_start": "2024-10-22 11:00:00",
+            "window_end": "2024-10-22 21:00:00",
+            "anomalies": [
+                {
+                    "station_id": "576",
+                    "variable": "bar",
+                    "anomaly_value": 995.2,
+                    "anomaly_timestamp": "2024-10-22 15:40:00"
+                }
+            ]
+        }
+    ],
+    "detection_params": {
+        "start_timestamp": 1729584600,
+        "window_len": 60,
+        "stride": 18,
+        "threshold": 2.5
+    }
 }</pre>
                 </div>
-
-                <h4>Field Descriptions:</h4>
-                <table>
-                    <tr>
-                        <th>Field</th>
-                        <th>Description</th>
-                        <th>Example</th>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">time_start</span></td>
-                        <td>Detection window start time</td>
-                        <td>2025-10-22 09:00:00</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">time_end</span></td>
-                        <td>Detection window end time</td>
-                        <td>2025-10-22 15:00:00</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">station_id</span></td>
-                        <td>Location where anomaly occurred</td>
-                        <td>574</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">variable</span></td>
-                        <td>Which variable is anomalous</td>
-                        <td>temp_out, out_hum, wind_speed, bar, rain</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">anomaly_timestamp</span></td>
-                        <td>Exact time of anomaly occurrence</td>
-                        <td>2025-10-22 12:30:00</td>
-                    </tr>
-                    <tr>
-                        <td><span class="highlight">anomaly_value</span></td>
-                        <td>The anomalous value</td>
-                        <td>25.5</td>
-                    </tr>
-                </table>
             </div>
 
-            <h3>Complete Output Example</h3>
-            <div class="code-block">
-                <pre>{
-    "detection_time": "2025-10-22 16:30:00",
-    "total_anomalies": 3,
-    "anomalies": [
-        {
-            "time_start": "2025-10-22 09:00:00",
-            "time_end": "2025-10-22 15:00:00",
-            "station_id": "574",
-            "variable": "temp_out",
-            "anomaly_timestamp": "2025-10-22 12:30:00",
-            "anomaly_value": 25.5
-        },
-        {
-            "time_start": "2025-10-22 09:00:00",
-            "time_end": "2025-10-22 15:00:00",
-            "station_id": "575",
-            "variable": "wind_speed",
-            "anomaly_timestamp": "2025-10-22 13:00:00",
-            "anomaly_value": 35.2
-        },
-        {
-            "time_start": "2025-10-22 09:00:00",
-            "time_end": "2025-10-22 15:00:00",
-            "station_id": "576",
-            "variable": "bar",
-            "anomaly_timestamp": "2025-10-22 14:20:00",
-            "anomaly_value": 995.5
-        }
-    ]
-}</pre>
+            <h3>Output Explanation</h3>
+            <div class="param-grid">
+                <div class="param-card">
+                    <h4>📊 Window Level</h4>
+                    <p class="desc">Each window represents one sliding window analysis</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>window_id:</strong> Sequential identifier</li>
+                        <li><strong>window_start/end:</strong> Time range analyzed</li>
+                        <li><strong>anomalies:</strong> All anomalies found in this window</li>
+                    </ul>
+                </div>
+                <div class="param-card">
+                    <h4>🚨 Anomaly Level</h4>
+                    <p class="desc">Each anomaly is a (station, timestamp, variable) tuple</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>station_id:</strong> Where (location)</li>
+                        <li><strong>variable:</strong> What variable</li>
+                        <li><strong>anomaly_value:</strong> The anomalous value</li>
+                        <li><strong>anomaly_timestamp:</strong> When it occurred</li>
+                    </ul>
+                </div>
             </div>
         </section>
 
         <!-- Workflow -->
         <section id="workflow" class="section">
-            <h2>🔄 Real-Time Workflow</h2>
+            <h2>🔄 Data Stream Workflow</h2>
 
             <div class="workflow-diagram">
-                <div class="workflow-step">1. Initialize</div>
+                <div class="workflow-step">1. User Input</div>
                 <div class="workflow-arrow">→</div>
-                <div class="workflow-step">2. Load W points</div>
+                <div class="workflow-step">2. Connect to Full Data</div>
                 <div class="workflow-arrow">→</div>
-                <div class="workflow-step">3. Detect</div>
+                <div class="workflow-step">3. Stream Data</div>
                 <div class="workflow-arrow">→</div>
-                <div class="workflow-step">4. Export</div>
-                <br><br>
-                <div class="workflow-arrow" style="transform: rotate(180deg);">→</div>
-                <br><br>
-                <div class="workflow-step">7. Add S points</div>
-                <div class="workflow-arrow" style="transform: rotate(180deg);">→</div>
-                <div class="workflow-step">6. Slide</div>
-                <div class="workflow-arrow" style="transform: rotate(180deg);">→</div>
-                <div class="workflow-step">5. Wait S×Δt</div>
+                <div class="workflow-step">4. Sliding Windows</div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">5. Detect & Return</div>
             </div>
 
             <h3>Detailed Steps</h3>
             
             <div class="param-grid">
                 <div class="param-card">
-                    <h4>Step 1: Initialize Detector</h4>
-                    <p class="desc">Create detector instance with window parameters</p>
+                    <h4>Step 1: User Provides Timestamp</h4>
+                    <p class="desc">User sends a starting timestamp (t₀) and parameters (W, S, σ, algorithm)</p>
                     <div class="code-block">
-                        <pre>detector = SlidingWindowAnomalyDetector(
-    window_len=W, 
-    stride=S
-)</pre>
+                        <pre>POST /detect
+{
+  "start_timestamp": 1729584600,
+  "window_len": 60,
+  "stride": 18,
+  "threshold": 2.5,
+  "algorithm": "zscore"
+}</pre>
                     </div>
                 </div>
 
                 <div class="param-card">
-                    <h4>Step 2: Load Initial Data</h4>
-                    <p class="desc">Load W time points of historical data to fill the first window</p>
+                    <h4>Step 2: Connect to Full Data</h4>
+                    <p class="desc">System connects to the complete historical database:</p>
                     <div class="code-block">
-                        <pre>for i in range(W):
-    detector.add_observation(...)</pre>
+                        <pre>Full Data = [0, 1, 2, ..., 10000]
+All timestamps (e.g., 0 → 10000)
+All station locations
+All 5 variables (temp_out, out_hum, wind_speed, bar, rain)</pre>
                     </div>
                 </div>
 
                 <div class="param-card">
-                    <h4>Step 3: Detect Anomalies</h4>
-                    <p class="desc">Perform anomaly detection on current window data</p>
+                    <h4>Step 3: Extract Data Stream</h4>
+                    <p class="desc">Pointer locates user timestamp (e.g., 47), extract Data Stream from 47 to current (10000):</p>
                     <div class="code-block">
-                        <pre>anomalies = detector.detect()</pre>
+                        <pre>Pointer = 47
+Data Stream = [47, 48, 49, ..., 10000]
+(Subset of Full Data)
+
+For ALL stations
+For ALL 5 variables</pre>
                     </div>
                 </div>
 
                 <div class="param-card">
-                    <h4>Step 4: Export Results</h4>
-                    <p class="desc">Export detected anomalies to JSON file</p>
+                    <h4>Step 4: Apply Sliding Windows</h4>
+                    <p class="desc">Split Data Stream into overlapping windows (W=60, S=18):</p>
                     <div class="code-block">
-                        <pre>export_results(
-    anomalies, 
-    "results.json"
-)</pre>
+                        <pre>Window 1: [47, ..., 47+60] = [47, 107]
+Window 2: [47+18, ..., 47+18+60] = [65, 125]
+Window 3: [47+36, ..., 47+36+60] = [83, 143]
+...
+Until reaching current time (10000)</pre>
                     </div>
                 </div>
 
                 <div class="param-card">
-                    <h4>Step 5: Wait for New Data</h4>
-                    <p class="desc">Wait for S×Δt time (S new time points) to arrive</p>
+                    <h4>Step 5: Detect in Each Window</h4>
+                    <p class="desc">For each window, apply selected algorithm:</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>zscore:</strong> Z = (X - μ) / σ</li>
+                        <li><strong>iqr:</strong> Bounds = Q1 - k×IQR, Q3 + k×IQR</li>
+                        <li><strong>mad:</strong> Modified Z = 0.6745×(X - median) / MAD</li>
+                        <li><strong>isolation_forest:</strong> ML-based isolation</li>
+                    </ul>
+                    <p class="desc" style="margin-top: 0.5rem;">Flag values exceeding threshold</p>
                 </div>
 
                 <div class="param-card">
-                    <h4>Step 6: Slide Window</h4>
-                    <p class="desc">Remove oldest S time points to make room for new data</p>
+                    <h4>Step 6: Return Results</h4>
+                    <p class="desc">Return all anomalies grouped by window:</p>
                     <div class="code-block">
-                        <pre>detector.slide()</pre>
+                        <pre>{
+  "windows": [
+    {
+      "window_id": 1,
+      "anomalies": [...]
+    },
+    ...
+  ]
+}</pre>
                     </div>
                 </div>
+            </div>
 
-                <div class="param-card">
-                    <h4>Step 7: Add New Data</h4>
-                    <p class="desc">Add newly arrived S time points</p>
-                    <div class="code-block">
-                        <pre>for i in range(S):
-    detector.add_observation(...)</pre>
-                    </div>
-                </div>
-
-                <div class="param-card">
-                    <h4>Step 8: Loop</h4>
-                    <p class="desc">Return to Step 3 for continuous monitoring</p>
-                </div>
+            <h3>Visual Example</h3>
+            <div class="info-box">
+                <strong>Scenario:</strong><br>
+                • <strong>Full Data:</strong> Timestamps 0 → 10000 (complete historical database)<br>
+                • <strong>User Input:</strong> start_timestamp = 47<br>
+                • <strong>Pointer:</strong> Locates position 47 in Full Data<br>
+                • <strong>Data Stream:</strong> Extracted [47 → 10000]<br>
+                • <strong>Parameters:</strong> W=60, S=18, Δt=10min<br><br>
+                
+                <strong>Sliding Windows Applied to Data Stream:</strong><br>
+                <strong>Window 1:</strong> [47 → 107] (60 points × 10min = 10 hours)<br>
+                <strong>Window 2:</strong> [65 → 125] (slide by 18 points = 3 hours)<br>
+                <strong>Window 3:</strong> [83 → 143] (slide by 18 points = 3 hours)<br>
+                <strong>...</strong><br>
+                <strong>Window N:</strong> [...→ 10000] (until reaching current time)<br><br>
+                
+                <strong>Overlap:</strong> 50% between consecutive windows (W-S)/W = (60-18)/60 = 70%
             </div>
         </section>
 
@@ -806,106 +855,140 @@ for anomaly in anomalies:
         <section id="examples" class="section">
             <h2>💻 Complete Examples</h2>
 
-            <h3>Basic Example</h3>
+            <h3>Example 1: Basic Usage</h3>
             <div class="code-block">
-                <pre>from simple_anomaly_api import SlidingWindowAnomalyDetector, export_results
+                <pre>import requests
 
-# 1. Initialize detector (W=36, S=18)
-detector = SlidingWindowAnomalyDetector(window_len=36, stride=18)
+# API endpoint
+url = "https://real-time-data-profiler.onrender.com/detect"
 
-# 2. Load initial data (W time points)
-for i in range(36):
-    timestamp = 1761100000 + i * 600  # Every 10 minutes
-    detector.add_observation(
-        station_id="574",
-        timestamp=timestamp,
-        temp_out=15.0 + i * 0.1,
-        out_hum=80.0,
-        wind_speed=5.0,
-        bar=1013.0,
-        rain=0.0
-    )
+# Prepare request (user only provides starting timestamp)
+data = {
+    "start_timestamp": 1729584600,  # October 22, 2024, 08:00:00 UTC
+    "window_len": 60,                # 60 points × 10min = 10 hours
+    "stride": 18,                    # 18 points = 3 hours
+    "threshold": 2.5                 # 2.5 standard deviations
+}
 
-# 3. Detect anomalies
-anomalies = detector.detect()
-print(f"Detected {len(anomalies)} anomalies")
+# Send request
+response = requests.post(url, json=data)
+result = response.json()
 
-# 4. Export results
-export_results(anomalies, "anomaly_results.json")
-
-# 5. View anomaly details
-for anomaly in anomalies:
-    print(f"Anomaly: Station {anomaly.station_id}, {anomaly.variable}")
-    print(f"  Time: {anomaly.anomaly_timestamp}")
-    print(f"  Value: {anomaly.anomaly_value}")
-    print()</pre>
+# Process results
+if result["status"] == "anomalies_found":
+    print(f"✅ Found {result['total_anomalies']} anomalies in {result['total_windows']} windows")
+    
+    for window in result["windows"]:
+        print(f"\n🔍 Window {window['window_id']}: [{window['window_start']} → {window['window_end']}]")
+        for anomaly in window["anomalies"]:
+            print(f"   🚨 Station {anomaly['station_id']}: {anomaly['variable']} = {anomaly['anomaly_value']}")
+            print(f"      Time: {anomaly['anomaly_timestamp']}")
+else:
+    print("✅ No anomalies detected")</pre>
             </div>
 
-            <h3>Real-Time Monitoring Example</h3>
+            <h3>Example 2: Different Algorithms</h3>
             <div class="code-block">
-                <pre>import time
-from simple_anomaly_api import SlidingWindowAnomalyDetector, export_results
+                <pre>import requests
+from datetime import datetime
 
-detector = SlidingWindowAnomalyDetector(window_len=36, stride=18)
+url = "https://real-time-data-profiler.onrender.com/detect"
 
-# Load initial data
-load_initial_data(detector, window_len=36)
+start_time = int(datetime(2024, 10, 22, 8, 0, 0).timestamp())
 
-# Real-time monitoring loop
-while True:
-    # 1. Detect in current window
-    anomalies = detector.detect()
-    
-    # 2. Process anomalies
-    if anomalies:
-        print(f"⚠️  Detected {len(anomalies)} anomalies!")
-        export_results(anomalies, f"anomalies_{int(time.time())}.json")
-        
-        # Send alerts
-        send_alert(anomalies)
-    else:
-        print("✓ No anomalies")
-    
-    # 3. Slide window
-    detector.slide()
-    
-    # 4. Wait and add new data (S × Δt = 18 × 10min = 3 hours)
-    time.sleep(3 * 3600)  # Wait 3 hours
-    
-    # 5. Fetch and add new S time points
-    new_data = fetch_new_data(count=18)
-    for obs in new_data:
-        detector.add_observation(**obs)
-    
-    print("Window updated, ready for next detection\n")</pre>
+# Example 1: Z-Score (default, fast, for normal distributions)
+response1 = requests.post(url, json={
+    "start_timestamp": start_time,
+    "window_len": 60,
+    "stride": 18,
+    "threshold": 2.5,
+    "algorithm": "zscore"
+})
+
+# Example 2: IQR (robust to outliers, for skewed data)
+response2 = requests.post(url, json={
+    "start_timestamp": start_time,
+    "window_len": 60,
+    "stride": 18,
+    "threshold": 1.5,
+    "algorithm": "iqr"
+})
+
+# Example 3: MAD (very robust, for noisy data)
+response3 = requests.post(url, json={
+    "start_timestamp": start_time,
+    "window_len": 60,
+    "stride": 18,
+    "threshold": 3.5,
+    "algorithm": "mad"
+})
+
+# Example 4: Isolation Forest (ML-based, for complex patterns)
+response4 = requests.post(url, json={
+    "start_timestamp": start_time,
+    "window_len": 60,
+    "stride": 18,
+    "threshold": 10,  # 10% contamination
+    "algorithm": "isolation_forest"
+})
+
+print(f"Z-Score: {response1.json()['total_anomalies']} anomalies")
+print(f"IQR: {response2.json()['total_anomalies']} anomalies")
+print(f"MAD: {response3.json()['total_anomalies']} anomalies")
+print(f"Isolation Forest: {response4.json()['total_anomalies']} anomalies")</pre>
             </div>
 
-            <h3>Batch Processing Example</h3>
+            <h3>Example 3: Save Results to File</h3>
             <div class="code-block">
-                <pre>from simple_anomaly_api import SlidingWindowAnomalyDetector, export_results
+                <pre>import requests
+import json
+from datetime import datetime
 
-detector = SlidingWindowAnomalyDetector(window_len=36, stride=18)
+url = "https://real-time-data-profiler.onrender.com/detect"
 
-# Batch add data for multiple stations
-observations = []
-for station_id in ["574", "575", "576"]:
-    for i in range(36):
-        observations.append({
-            "station_id": station_id,
-            "timestamp": 1761100000 + i * 600,
-            "temp_out": 15.0 + i * 0.1,
-            "out_hum": 80.0,
-            "wind_speed": 5.0,
-            "bar": 1013.0,
-            "rain": 0.0
-        })
+# Detect anomalies
+data = {
+    "start_timestamp": 1729584600,
+    "window_len": 60,
+    "stride": 18,
+    "threshold": 2.5
+}
 
-# Add all data at once
-detector.add_batch_observations(observations)
+response = requests.post(url, json=data)
+result = response.json()
 
-# Detect
-anomalies = detector.detect()
-print(f"Detected {len(anomalies)} anomalies in {len(set(o['station_id'] for o in observations))} stations")</pre>
+# Save to JSON file
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+filename = f"anomaly_report_{timestamp}.json"
+
+with open(filename, "w") as f:
+    json.dump(result, f, indent=2)
+
+print(f"Report saved to: {filename}")
+
+# Generate summary report
+if result["status"] == "anomalies_found":
+    summary = f"""
+    Anomaly Detection Summary
+    =========================
+    Analysis Time: {datetime.now()}
+    Total Windows Analyzed: {result['total_windows']}
+    Total Anomalies Found: {result['total_anomalies']}
+    
+    Affected Stations:
+    """
+    
+    stations = set()
+    for window in result["windows"]:
+        for anomaly in window["anomalies"]:
+            stations.add(anomaly["station_id"])
+    
+    summary += "\n".join([f"  - Station {s}" for s in sorted(stations)])
+    
+    with open(f"anomaly_summary_{timestamp}.txt", "w") as f:
+        f.write(summary)
+    
+    print(summary)</pre>
             </div>
         </section>
 
