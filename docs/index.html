@@ -312,28 +312,6 @@
                 <span class="info-box-icon">ℹ️</span>
                 <strong>Description:</strong> A real-time anomaly detection API service for weather station time series data using sliding window technique. The system connects to a complete historical database (Full Real-Time Data), uses a pointer to locate user-specified starting timestamp, extracts a Data Stream from that point to current time, and applies sliding windows for anomaly detection.
             </div>
-            
-            <h3>System Architecture</h3>
-            <div class="workflow-diagram">
-                <div class="workflow-step">Full Real-Time Data<br><small>[0 → current]</small></div>
-                <div class="workflow-arrow">→</div>
-                <div class="workflow-step">Pointer<br><small>[user: 47]</small></div>
-                <div class="workflow-arrow">→</div>
-                <div class="workflow-step">Data Stream<br><small>[47 → current]</small></div>
-                <div class="workflow-arrow">→</div>
-                <div class="workflow-step">Sliding Windows<br><small>[W, S]</small></div>
-                <div class="workflow-arrow">→</div>
-                <div class="workflow-step">Detect<br><small>[Algorithm]</small></div>
-                <div class="workflow-arrow">→</div>
-                <div class="workflow-step">Results</div>
-            </div>
-            <p style="text-align: center; color: #586069; margin-top: 1rem;">
-                <strong>Full Real-Time Data:</strong> Complete historical database (e.g., timestamps 0 → 10000)<br>
-                <strong>Pointer:</strong> User inputs starting timestamp (e.g., 47) → Locates position in Full Real-Time Data<br>
-                <strong>Data Stream:</strong> Extracted subset from pointer to current (e.g., 47 → 10000)<br>
-                <strong>Sliding Windows:</strong> Split Data Stream into overlapping windows for analysis<br>
-                <strong>Output:</strong> Anomaly list for each window
-            </p>
 
             <h3>Key Features</h3>
             <div class="param-grid">
